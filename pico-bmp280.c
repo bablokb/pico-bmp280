@@ -50,7 +50,9 @@ int8_t init_sensor(struct bmp280_dev *dev) {
   if (rslt != BMP280_OK) {
     return rslt;
   }
-
+#ifdef DEBUG
+  printf("[DEBUG] chip-id: 0x%x\n",dev->chip_id);
+#endif
   // read configuration ...
   rslt = bmp280_get_config(&conf,dev);
   if (rslt != BMP280_OK) {
