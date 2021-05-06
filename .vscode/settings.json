@@ -1,0 +1,12 @@
+{
+  "cmake.configureOnOpen": false,
+  "cmake.statusbar.advanced": {
+    "debug" : {
+      "visibility": "hidden"
+              },    "launch" : {
+      "visibility": "hidden"
+               },
+    },
+    "editor.tabSize": 2,
+    "editor.detectIndentation": false,
+}
