@@ -114,7 +114,7 @@ int main() {
   } else {
     printf("Temperature, Pressure\n");
     while (read_sensor(&dev,&temp,&press) == BMP280_OK) {
-      printf("%0.2lf deg C, %0.2lf hPa\n", temp, press/alt_fac);
+      printf("%0.1lf °C, %0.0lf hPa\n", temp, press/alt_fac);
       sleep_ms(1000*UPDATE_INTERVAL);
     }
     printf("error while reading sensor: RC: %d", rslt);
