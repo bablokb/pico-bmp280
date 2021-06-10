@@ -14,6 +14,19 @@
 #include "user.h"                             // functions needed by Bosch-API
 #include "bmp280.h"                           // declaration of Bosch-API
 
+#include "ST7735_TFT.h"
+#include "FreeMonoOblique12pt7b.h"
+
+#define FIELDS     2
+#define FIELD_W  110
+#define FIELD_H   36
+#define FIELD_R    5
+#define TEXT_X     8
+#define TEXT_Y    26
+#define TEXT_FG   ST7735_BLACK
+#define TEXT_BG   ST7735_WHITE
+#define TFT_BG    ST7735_BLUE
+
 // ---------------------------------------------------------------------------
 // hardware-specific intialization
 // SPI_* constants from CMakeLists.txt or user.h
@@ -28,6 +41,30 @@ void init_hw() {
   gpio_init(SPI_CS);
   gpio_set_dir(SPI_CS, GPIO_OUT);
   gpio_put(SPI_CS, 1);                        // Chip select is active-low
+
+  gpio_init(SPI_TFT_CS);
+  gpio_set_dir(SPI_TFT_CS, GPIO_OUT);
+  gpio_put(SPI_TFT_CS, 1);                        // Chip select is active-low
+
+  gpio_init(SPI_TFT_DC);
+  gpio_set_dir(SPI_TFT_DC, GPIO_OUT);
+  gpio_put(SPI_TFT_DC, 0);                        // Chip select is active-low
+
+  gpio_init(SPI_TFT_RST);
+  gpio_set_dir(SPI_TFT_RST, GPIO_OUT);
+  gpio_put(SPI_TFT_RST, 0);
+}
+
+// ---------------------------------------------------------------------------
+// initialize TFT
+
+void init_tft() {
+  #ifdef DEBUG
+    printf("[DEBUG] initializing TFT\n");
+  #endif
+  TFT_BlackTab_Initialize();
+  fillScreen(TFT_BG);
+  setFont(&FreeMonoOblique12pt7b);
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +134,32 @@ int8_t read_sensor(struct bmp280_dev *dev, float *temp, float *press) {
   *press = 0.01f*press32;
   return rslt;
 }
+// ---------------------------------------------------------------------------
+// display sensor data on TFT
+
+void display_data(float temp, float press) {
+  char values[2][10];
+
+  snprintf(values[0],10,"%+0.1f°C",temp);
+  snprintf(values[1],10,"%0.0fhPa",press);
+
+  // clear output area
+  uint8_t hgap = (tft_width-FIELD_W)/2;
+  uint8_t vgap = (tft_height-FIELDS*FIELD_H)/(FIELDS+1);
+  uint8_t y    = vgap;
+
+  for (uint8_t i=0; i<FIELDS; ++i) {
+    fillRoundRect(hgap,y,FIELD_W,FIELD_H,FIELD_R,TEXT_BG);
+    y += FIELD_H+vgap;
+  }
+
+  // write sensor readouts
+  y = vgap + TEXT_Y;
+  for (uint8_t i=0; i<FIELDS; ++i) {
+    drawText(hgap+TEXT_X,y,values[i],TEXT_FG,TEXT_BG,1);
+    y += FIELD_H+vgap;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // main loop: read data and print data to console
@@ -109,13 +172,21 @@ int main() {
   float alt_fac = pow(1.0-ALTITUDE_AT_LOC/44330.0, 5.255);
 
   init_hw();
-  rslt = init_sensor(&dev);  
+  init_tft();
+  rslt = init_sensor(&dev);
   if (rslt != BMP280_OK) {
     printf("could not initialize sensor. RC: %d\n", rslt);
   } else {
-    printf("Temperature, Pressure\n");
+    #ifdef DEBUG
+      printf("Temperature, Pressure\n");
+    #endif
+    sleep_ms(20);
     while (read_sensor(&dev,&temp,&press) == BMP280_OK) {
-      printf("%0.1lf °C, %0.0lf hPa\n", temp, press/alt_fac);
+      press /= alt_fac;
+      #ifdef DEBUG
+        printf("%0.1lf °C, %0.0lf hPa\n", temp, press);
+      #endif
+      display_data(temp,press);
       sleep_ms(1000*UPDATE_INTERVAL);
     }
     printf("error while reading sensor: RC: %d", rslt);
