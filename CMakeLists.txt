@@ -39,6 +39,13 @@ add_compile_definitions(ALTITUDE_AT_LOC=520)
 add_compile_definitions(BMP280_DISABLE_DOUBLE_COMPENSATION)
 add_compile_definitions(BMP280_DISABLE_64BIT_COMPENSATION)
 
+# configuration for the st7735-library
+add_compile_definitions(SPI_TFT_CS=9)
+add_compile_definitions(SPI_TFT_DC=10)
+add_compile_definitions(SPI_TFT_RST=11)
+add_compile_definitions(TFT_ENABLE_RESET TFT_ENABLE_BLACK TFT_ENABLE_TEXT
+                        TFT_ENABLE_SHAPES TFT_ENABLE_FONTS)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_VERBOSE_MAKEFILE 1)
   add_compile_definitions(DEBUG)
@@ -53,13 +60,13 @@ pico_set_program_version(pico-bmp280 "1.0")
 pico_enable_stdio_uart(pico-bmp280 1)
 #pico_enable_stdio_usb(pico-bmp280 1)
 
-# Add the standard library to the build
-target_link_libraries(pico-bmp280 pico_stdlib)
+# build the st7735-library from our submodule
+add_subdirectory(pico-st7735/lib-st7735)
 
-# Add any user requested libraries
-target_link_libraries(pico-bmp280
-        hardware_spi
-        )
+# Add the standard library to the build
+target_link_libraries(pico-bmp280 pico_stdlib
+                                  lib-st7735
+                                  hardware_spi)
 
 pico_add_extra_outputs(pico-bmp280)
 
